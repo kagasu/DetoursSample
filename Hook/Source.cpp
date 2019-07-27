@@ -18,6 +18,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstModule, DWORD dwReason, LPVOID lpvReserved)
 		DetourRestoreAfterWith();
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
+		// (uintptr_t&)pMessageBoxW = reinterpret_cast<uintptr_t>(GetProcAddress(GetModuleHandleA("user32"), "MessageBoxW"));
 		DetourAttach(&(PVOID&)pMessageBoxW, HookedMessageBoxW);
 
 		if (DetourTransactionCommit() == NO_ERROR)
