@@ -1,13 +1,18 @@
 #include <Windows.h>
 #include <iostream>
-#include <detours.h>
-#pragma comment(lib, "detours.lib")
+#include "DetoursHelper.h"
 
-int (WINAPI *pMessageBoxW)(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType) = MessageBoxW;
-int WINAPI HookedMessageBoxW(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType)
+void DetourMessageBoxW(BOOL hookEnabled)
 {
-	int ret = pMessageBoxW(hWnd, L"hooked", lpCaption, uType);
-	return ret;
+	static decltype(&MessageBoxW) OriginalMessageBoxW = MessageBoxW;
+
+	decltype(&MessageBoxW) HookMessageBox = [](HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType) -> int
+	{
+		auto ret = OriginalMessageBoxW(hWnd, L"hooked", lpCaption, uType);
+		return ret;
+	};
+
+	DetourFunction(hookEnabled, reinterpret_cast<LPVOID*>(&OriginalMessageBoxW), HookMessageBox);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstModule, DWORD dwReason, LPVOID lpvReserved)
@@ -15,20 +20,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstModule, DWORD dwReason, LPVOID lpvReserved)
 	switch (dwReason)
 	{
 	case DLL_PROCESS_ATTACH:
-		DetourRestoreAfterWith();
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-		// (uintptr_t&)pMessageBoxW = reinterpret_cast<uintptr_t>(GetProcAddress(GetModuleHandleA("user32"), "MessageBoxW"));
-		DetourAttach(&(PVOID&)pMessageBoxW, HookedMessageBoxW);
-
-		if (DetourTransactionCommit() == NO_ERROR)
-		{
-			std::cout << "function hook successfully finished" << std::endl;
-		}
-		else
-		{
-			std::cout << "error" << std::endl;
-		}
+		DetourMessageBoxW(true);
+		std::cout << "function hook successfully finished" << std::endl;
 	}
 
 	return TRUE;
