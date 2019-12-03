@@ -1,10 +1,10 @@
 # Detours Sample
 
-# Requirements
+### Requirements
 - Detours
 ```
 vcpkg install detours
 ```
 
-# Example
+### Example
 ![](https://i.imgur.com/vcio47g.gif)
